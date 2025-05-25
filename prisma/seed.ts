@@ -4,38 +4,42 @@ import bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
 async function main() {
-  // Criar categorias
-  const limpeza = await prisma.category.upsert({
-    where: { name: 'Limpeza' },
-    update: {},
-    create: {
-      name: 'Limpeza',
-      description: 'Serviços de limpeza residencial e comercial'
-    }
-  })
+  console.log('🌱 Starting database seed...')
 
-  const obras = await prisma.category.upsert({
-    where: { name: 'Obras' },
-    update: {},
-    create: {
-      name: 'Obras',
-      description: 'Pequenos reparos e reformas'
-    }
-  })
+  // Create categories
+  const categories = await Promise.all([
+    prisma.category.upsert({
+      where: { name: 'Limpeza' },
+      update: {},
+      create: {
+        name: 'Limpeza',
+        description: 'Serviços de limpeza residencial e comercial'
+      }
+    }),
+    prisma.category.upsert({
+      where: { name: 'Obras' },
+      update: {},
+      create: {
+        name: 'Obras',
+        description: 'Serviços de construção e reforma'
+      }
+    }),
+    prisma.category.upsert({
+      where: { name: 'Pintura' },
+      update: {},
+      create: {
+        name: 'Pintura',
+        description: 'Serviços de pintura residencial e comercial'
+      }
+    })
+  ])
 
-  const pintura = await prisma.category.upsert({
-    where: { name: 'Pintura' },
-    update: {},
-    create: {
-      name: 'Pintura',
-      description: 'Pintura interna, externa e artística'
-    }
-  })
+  console.log('✅ Categories created')
 
-  // Criar usuário cliente de exemplo
+  // Create test users
   const hashedPassword = await bcrypt.hash('123456', 10)
-  
-  const cliente = await prisma.user.upsert({
+
+  const clientUser = await prisma.user.upsert({
     where: { email: 'cliente@exemplo.com' },
     update: {},
     create: {
@@ -47,8 +51,7 @@ async function main() {
     }
   })
 
-  // Criar usuário trabalhador de exemplo
-  const trabalhador = await prisma.user.upsert({
+  const workerUser = await prisma.user.upsert({
     where: { email: 'trabalhador@exemplo.com' },
     update: {},
     create: {
@@ -60,55 +63,111 @@ async function main() {
     }
   })
 
-  // Criar perfil do trabalhador
-  const perfilTrabalhador = await prisma.workerProfile.upsert({
-    where: { userId: trabalhador.id },
+  console.log('✅ Users created')
+
+  // Create worker profile
+  const workerProfile = await prisma.workerProfile.upsert({
+    where: { userId: workerUser.id },
     update: {},
     create: {
-      userId: trabalhador.id,
-      bio: 'Profissional experiente em limpeza e pequenos reparos',
+      userId: workerUser.id,
+      bio: 'Profissional experiente em limpeza residencial e comercial',
       location: 'São Paulo, SP',
-      rating: 4.8
+      rating: 4.8,
+      availability: {
+        monday: { start: '08:00', end: '18:00' },
+        tuesday: { start: '08:00', end: '18:00' },
+        wednesday: { start: '08:00', end: '18:00' },
+        thursday: { start: '08:00', end: '18:00' },
+        friday: { start: '08:00', end: '18:00' },
+        saturday: { start: '09:00', end: '15:00' }
+      }
     }
   })
 
-  // Associar categorias ao trabalhador
+  // Associate worker with categories
   await prisma.workerCategory.upsert({
     where: {
       workerId_categoryId: {
-        workerId: perfilTrabalhador.id,
-        categoryId: limpeza.id
+        workerId: workerProfile.id,
+        categoryId: categories[0].id // Limpeza
       }
     },
     update: {},
     create: {
-      workerId: perfilTrabalhador.id,
-      categoryId: limpeza.id
+      workerId: workerProfile.id,
+      categoryId: categories[0].id
     }
   })
 
   await prisma.workerCategory.upsert({
     where: {
       workerId_categoryId: {
-        workerId: perfilTrabalhador.id,
-        categoryId: obras.id
+        workerId: workerProfile.id,
+        categoryId: categories[2].id // Pintura
       }
     },
     update: {},
     create: {
-      workerId: perfilTrabalhador.id,
-      categoryId: obras.id
+      workerId: workerProfile.id,
+      categoryId: categories[2].id
     }
   })
 
-  console.log('Seed executado com sucesso!')
-  console.log('Categorias criadas:', { limpeza, obras, pintura })
-  console.log('Usuários criados:', { cliente, trabalhador })
+  console.log('✅ Worker profile and categories associated')
+
+  // Create additional test workers
+  const worker2User = await prisma.user.upsert({
+    where: { email: 'construtor@exemplo.com' },
+    update: {},
+    create: {
+      name: 'Carlos Pereira',
+      email: 'construtor@exemplo.com',
+      passwordHash: hashedPassword,
+      phone: '(11) 77777-7777',
+      role: 'WORKER'
+    }
+  })
+
+  const worker2Profile = await prisma.workerProfile.upsert({
+    where: { userId: worker2User.id },
+    update: {},
+    create: {
+      userId: worker2User.id,
+      bio: 'Especialista em obras e reformas com 15 anos de experiência',
+      location: 'São Paulo, SP',
+      rating: 4.9,
+      availability: {
+        monday: { start: '07:00', end: '17:00' },
+        tuesday: { start: '07:00', end: '17:00' },
+        wednesday: { start: '07:00', end: '17:00' },
+        thursday: { start: '07:00', end: '17:00' },
+        friday: { start: '07:00', end: '17:00' }
+      }
+    }
+  })
+
+  await prisma.workerCategory.upsert({
+    where: {
+      workerId_categoryId: {
+        workerId: worker2Profile.id,
+        categoryId: categories[1].id // Obras
+      }
+    },
+    update: {},
+    create: {
+      workerId: worker2Profile.id,
+      categoryId: categories[1].id
+    }
+  })
+
+  console.log('✅ Additional workers created')
+  console.log('🎉 Database seeded successfully!')
 }
 
 main()
   .catch((e) => {
-    console.error(e)
+    console.error('❌ Error seeding database:', e)
     process.exit(1)
   })
   .finally(async () => {
