@@ -70,8 +70,18 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao criar usuário:', error)
+    
+    // Log mais detalhado do erro
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
+    
     return NextResponse.json(
-      { message: 'Erro interno do servidor' },
+      { 
+        message: 'Erro interno do servidor',
+        error: process.env.NODE_ENV === 'development' ? error : undefined
+      },
       { status: 500 }
     )
   }
