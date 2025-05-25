@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
       .from('users')
       .select('id')
       .eq('email', email)
-      .single()
+      .maybeSingle() // Use maybeSingle instead of single to avoid error when no rows
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (checkError) {
       console.log('❌ Error checking user:', checkError)
       throw checkError
     }
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     console.log('👤 Creating user...')
-    // Criar usuário
+    // Criar usuário - não incluir id, deixar o Supabase gerar
     const { data: user, error: userError } = await supabase
       .from('users')
       .insert({
@@ -67,9 +67,8 @@ export async function POST(request: NextRequest) {
         email,
         password_hash: hashedPassword,
         phone: phone || null,
-        role: role.toUpperCase(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        role: role.toUpperCase()
+        // Removido created_at e updated_at - deixar o Supabase gerar automaticamente
       })
       .select()
       .single()
@@ -98,8 +97,8 @@ export async function POST(request: NextRequest) {
           user_id: user.id,
           bio: bio || '',
           location,
-          rating: 0,
-          created_at: new Date().toISOString()
+          rating: 0
+          // Removido created_at - deixar o Supabase gerar automaticamente
         })
         .select()
         .single()
