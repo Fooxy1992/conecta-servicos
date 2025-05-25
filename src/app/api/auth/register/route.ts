@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
-import { prisma } from '@/lib/prisma'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 Register API called')
+  console.log('🚀 Register API called (Supabase version)')
   
   try {
-    // Teste de conexão primeiro
-    console.log('🔍 Testing database connection...')
-    await prisma.$queryRaw`SELECT 1`
-    console.log('✅ Database connection successful')
+    // Teste de conexão com Supabase
+    console.log('🔍 Testing Supabase connection...')
+    const { data: testData, error: testError } = await supabase
+      .from('users')
+      .select('count')
+      .limit(1)
+    
+    if (testError) {
+      console.log('❌ Supabase connection failed:', testError)
+    } else {
+      console.log('✅ Supabase connection successful')
+    }
 
     const body = await request.json()
     console.log('📝 Request body:', { ...body, password: '[HIDDEN]' })
@@ -27,9 +35,16 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 Checking if user exists...')
     // Verificar se o email já existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    })
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.log('❌ Error checking user:', checkError)
+      throw checkError
+    }
 
     if (existingUser) {
       console.log('❌ User already exists')
@@ -45,15 +60,25 @@ export async function POST(request: NextRequest) {
 
     console.log('👤 Creating user...')
     // Criar usuário
-    const user = await prisma.user.create({
-      data: {
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .insert({
         name,
         email,
-        passwordHash: hashedPassword,
+        password_hash: hashedPassword,
         phone: phone || null,
-        role: role as 'CLIENT' | 'WORKER'
-      }
-    })
+        role: role.toUpperCase(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (userError) {
+      console.log('❌ Error creating user:', userError)
+      throw userError
+    }
+
     console.log('✅ User created:', user.id)
 
     // Se for trabalhador, criar perfil
@@ -67,19 +92,28 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('👷 Creating worker profile...')
-      await prisma.workerProfile.create({
-        data: {
-          userId: user.id,
+      const { data: workerProfile, error: profileError } = await supabase
+        .from('worker_profiles')
+        .insert({
+          user_id: user.id,
           bio: bio || '',
           location,
-          rating: 0
-        }
-      })
+          rating: 0,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (profileError) {
+        console.log('❌ Error creating worker profile:', profileError)
+        throw profileError
+      }
+
       console.log('✅ Worker profile created')
     }
 
     // Remover senha do retorno
-    const { passwordHash, ...userWithoutPassword } = user
+    const { password_hash, ...userWithoutPassword } = user
 
     console.log('🎉 Registration successful')
     return NextResponse.json({
@@ -97,10 +131,11 @@ export async function POST(request: NextRequest) {
       console.error('Error stack:', error.stack)
     }
     
-    // Log do tipo de erro do Prisma
+    // Log do tipo de erro do Supabase
     if (error && typeof error === 'object' && 'code' in error) {
-      console.error('Prisma error code:', (error as any).code)
-      console.error('Prisma error meta:', (error as any).meta)
+      console.error('Supabase error code:', (error as any).code)
+      console.error('Supabase error details:', (error as any).details)
+      console.error('Supabase error hint:', (error as any).hint)
     }
     
     return NextResponse.json(
