@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
           role: role.toUpperCase(),
           bio: bio || null,
           location: location || null
-        }
+        },
+        emailRedirectTo: undefined // Desabilita redirecionamento de email
       }
     })
 
