@@ -24,7 +24,7 @@ function RegisterForm() {
     setIsLoading(true)
     
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/register-supabase-auth', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
