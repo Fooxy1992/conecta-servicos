@@ -19,6 +19,15 @@ export default function Home() {
             
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
+              <Link href="/search" className="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200">
+                Buscar
+              </Link>
+              <Link href="/about" className="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200">
+                Sobre
+              </Link>
+              <Link href="/contact" className="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200">
+                Contato
+              </Link>
               <Link href="/login" className="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200">
                 Entrar
               </Link>
@@ -60,15 +69,21 @@ export default function Home() {
             </p>
             
             <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4 sm:gap-6">
-              <Link href="/register?type=client" className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center">
-                <Users className="mr-3 h-5 w-5" />
-                Sou Cliente
+              <Link href="/search" className="group bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center">
+                <Search className="mr-3 h-5 w-5" />
+                Buscar Profissionais
                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link href="/register?type=worker" className="group bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-full text-lg font-semibold hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center">
                 <Shield className="mr-3 h-5 w-5" />
                 Sou Trabalhador
                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <Link href="/register?type=client" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                Ou cadastre-se como cliente →
               </Link>
             </div>
 
